@@ -66,10 +66,31 @@ fn main() {
                             }
             "3" -> {
                 clr();
-                let search = prompt("Search by the service name: ")
-            }
+                let search = prompt("Search by the service name: ");
+                match search_in_db(&conn, &search) {
+                    Ok(Some(entry)) => {
+                        println!("Service = {}
+                                - Username : {}
+                                - Password : {:?}",
+                                entry.service, entry.username, entry.password
+                        );
+                    }
+                    Ok(None) => {
+                        println!("Service not found.")
+                    }
+                    Err(err) => {
+                        eprintln!("Error fetching for service: {}", err);
+                    }
                 }
             }
+
+            "4" => {
+                clr();
+                println!("Goodbye!");
+                break;
+            }
+            _ => println!("Invalid choice.")
+                }
+                println!("\n\n");
+            }
         }
-    }
-}
