@@ -1,4 +1,4 @@
-use std::io::{self, Result};
+use std::io::{self, Error, Result};
 use std::io::Write;
 extern crate rusqlite;
 use rusqlite::{Connection, Error};
@@ -81,4 +81,20 @@ pub fn read_passwords_from_db(conn: &Connection) -> Result<Vec<ServiceInfo>, Err
 }
 
 
-pub fn search_in_db()
+pub fn search_in_db(conn: &Connection, name: &str) -> Result<Option<ServiceInfo>, Error> {
+    let mut stmt = conn.prepare("SELECT id, service, username, password from passwords WHERE service = ?")?;
+    let result = stmt.query_row(&[name], |row| {
+        Ok(ServiceInfo {
+            id: Some(row.get(0)?),
+            service: row.get(1)?,
+            username: row.get(2)?,
+            password: row.get(3)?,
+        })
+    });
+
+    match result {
+        Ok(entry) => Ok(Some(entry)),
+        Err(Error::QueryReturnedNoRows) => Ok(None),
+        Err(err) => Err(err),
+    }
+}
