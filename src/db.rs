@@ -5,7 +5,7 @@ use rusqlite::{Connection, Error};
 use serde::{Deserialize, Serialize};
 
 
-#[derive(Debug, Serialize, DeDeserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ServiceInfo {
     pub id: Option<i64>,
     pub service: String,
