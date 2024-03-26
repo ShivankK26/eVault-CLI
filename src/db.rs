@@ -1,9 +1,8 @@
-use std::io::{self, Error, Result};
+use std::io;
 use std::io::Write;
 extern crate rusqlite;
 use rusqlite::{Connection, Error};
 use serde::{Deserialize, Serialize};
-
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ServiceInfo {
@@ -14,8 +13,8 @@ pub struct ServiceInfo {
 }
 
 impl ServiceInfo {
-    pub fn new(service: String, username: String, password: String) -> {
-        Service {
+    pub fn new(service: String, username: String, password: String) -> Self {
+        ServiceInfo {
             id: None,
             service,
             username,
@@ -25,7 +24,7 @@ impl ServiceInfo {
 }
 
 pub fn prompt(prompt: &str) -> String {
-    println!("{}", prompt);
+    print!("{}", prompt);
     io::stdout().flush().unwrap();
 
     let mut input = String::new();
@@ -33,7 +32,6 @@ pub fn prompt(prompt: &str) -> String {
 
     input.trim().to_string()
 }
-
 
 pub fn init_database() -> Result<Connection, Error> {
     let conn = Connection::open("passwords.db")?;
@@ -43,13 +41,13 @@ pub fn init_database() -> Result<Connection, Error> {
             id INTEGER PRIMARY KEY,
             service TEXT,
             username TEXT,
-            password TEXT,
+            password TEXT
         )",
         [],
     )?;
+
     Ok(conn)
 }
-
 
 pub fn write_password_to_db(
     conn: &Connection,
@@ -57,32 +55,26 @@ pub fn write_password_to_db(
     username: &str,
     password: &str,
 ) -> Result<(), Error> {
-    conn.execute("
-            INSERT INTO passwords (service, username, passwords) VALUES (?, ?, ?)
-        ",
+    conn.execute(
+        "INSERT INTO passwords (service, username, password) VALUES (?, ?, ?)",
         &[&service, &username, &password],
     )?;
     Ok(())
 }
 
-
 pub fn read_passwords_from_db(conn: &Connection) -> Result<Vec<ServiceInfo>, Error> {
-    let mut stmt = conn.prepare("SELECT service, username, password")?;
+    let mut stmt = conn.prepare("SELECT service, username, password FROM passwords")?;
     let entries = stmt
         .query_map([], |row| {
-            Ok(ServiceInfo::new(
-                row.get(0)?,
-                row.get(1)?,
-                row.get(2)?,
-            ))
+            Ok(ServiceInfo::new(row.get(0)?, row.get(1)?, row.get(2)?))
         })?
         .collect::<Result<Vec<_>, _>>()?;
     Ok(entries)
 }
 
-
-pub fn search_in_db(conn: &Connection, name: &str) -> Result<Option<ServiceInfo>, Error> {
-    let mut stmt = conn.prepare("SELECT id, service, username, password from passwords WHERE service = ?")?;
+pub fn search_service_by_name(conn: &Connection, name: &str) -> Result<Option<ServiceInfo>, Error> {
+    let mut stmt =
+        conn.prepare("SELECT id, service, username, password FROM passwords WHERE service = ?")?;
     let result = stmt.query_row(&[name], |row| {
         Ok(ServiceInfo {
             id: Some(row.get(0)?),
